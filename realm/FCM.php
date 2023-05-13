@@ -12,15 +12,9 @@ use Maatify\Logger\Logger;
 
 abstract class FCM
 {
-    private string $api_key;
+    protected string $api_key;
 
     private array $fields;
-
-    public function __construct(string $api_key)
-    {
-        $this->api_key = $api_key;
-        return $this;
-    }
 
     private function SendTopicOnly(string $message, string|int $topic,int $type){
         $this->fields = [

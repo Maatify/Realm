@@ -1,7 +1,7 @@
 {
   "name": "maatify/realm",
   "description": "Official PHP library for maatify.dev Realm handler, known by our team",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "library",
   "keywords": [
     "PHP",
@@ -45,7 +45,8 @@
     "php": ">=8.0",
     "maatify/logger": "^1.0",
     "maatify/json": "^1.0",
-    "kreait/firebase-php": "^6.9"
+    "kreait/firebase-php": "^6.9",
+    "ext-curl": "*"
   },
   "autoload": {
     "psr-4": {
