@@ -47,7 +47,7 @@ abstract class FCM
     public function SendDeviceIDNotification(string $device_token, string $title, string $message)
     {
         $this->fields = [
-            'registration_ids' => $device_token,
+            'registration_ids' => [$device_token],
             'notification' => array('title' => $title, 'body' => $message,'sound' => 'default'),
             'data' => array('Title' => $title, 'Message' => $message),
         ];
