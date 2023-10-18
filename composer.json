@@ -1,7 +1,7 @@
 {
   "name": "maatify/realm",
   "description": "Official PHP library for maatify.dev Realm handler, known by our team",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "library",
   "keywords": [
     "PHP",

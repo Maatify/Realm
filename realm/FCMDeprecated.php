@@ -10,7 +10,7 @@ namespace Maatify\Realm;
 
 use Maatify\Logger\Logger;
 
-abstract class FCM
+abstract class FCMDeprecated
 {
     protected string $api_key;
 
@@ -55,7 +55,7 @@ abstract class FCM
     }
 
     private function Send(){
-        //Google Firebase messaging FCM-API url
+        //Google Firebase messaging FCMDeprecated-API url
         $url = 'https://fcm.googleapis.com/fcm/send';
 
         $headers = array(
