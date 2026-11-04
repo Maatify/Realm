@@ -10,6 +10,15 @@ namespace Maatify\Realm;
 
 use Maatify\Logger\Logger;
 
+/**
+ * Sends notifications through the legacy FCM HTTP API (`/fcm/send`, server key in a header).
+ *
+ * That API has been retired by Google in favor of the HTTP v1 API with OAuth 2.0; prefer the
+ * messaging component of `kreait/firebase-php`, which this package already requires. The TLS
+ * certificate and host name of the server are verified.
+ *
+ * @deprecated
+ */
 abstract class FCMDeprecated
 {
     protected string $api_key;
@@ -54,9 +63,14 @@ abstract class FCMDeprecated
         return $this->Send();
     }
 
+    /** The legacy FCM HTTP API URL. A subclass may override it, for example to target a local test double. */
+    protected function endpoint(): string
+    {
+        return 'https://fcm.googleapis.com/fcm/send';
+    }
+
     private function Send(){
-        //Google Firebase messaging FCMDeprecated-API url
-        $url = 'https://fcm.googleapis.com/fcm/send';
+        $url = $this->endpoint();
 
         $headers = array(
             'Authorization: key=' . $this->api_key,
@@ -67,8 +81,10 @@ abstract class FCMDeprecated
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        // The server key travels in a header: only send it over a connection whose certificate and
+        // host name were verified.
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($this->fields));
         $result = curl_exec($ch);
 
