@@ -10,7 +10,6 @@
 namespace Maatify\Realm;
 
 use Kreait\Firebase\Exception\DatabaseException;
-use Maatify\Logger\Logger;
 
 class RealmSms extends RealmDB
 {
@@ -98,7 +97,7 @@ class RealmSms extends RealmDB
             ]);
             return true;
         }catch (DatabaseException $exception){
-            Logger::RecordLog($exception);
+            self::reportFailure($exception);
             return false;
         }
 
