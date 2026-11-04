@@ -38,17 +38,23 @@ abstract class RealmDB
 
     /**
      * Logs the exception class, code and line only (the message and trace can carry database URLs,
-     * credential file paths or request data). A failure of the logger itself must not replace the
-     * outcome of the operation that failed, so it is contained here.
+     * credential file paths or request data). Without a log file name the logger uses the default
+     * of its own release. A failure of the logger itself must not replace the outcome of the
+     * operation that failed, so it is contained here.
      */
-    protected static function reportFailure(Throwable $exception, string $logFile): void
+    protected static function reportFailure(Throwable $exception, ?string $logFile = null): void
     {
+        $entry = [
+            'exception' => get_class($exception),
+            'code' => $exception->getCode(),
+            'line' => $exception->getLine(),
+        ];
         try {
-            Logger::RecordLog(message: [
-                'exception' => get_class($exception),
-                'code' => $exception->getCode(),
-                'line' => $exception->getLine(),
-            ], logFile: $logFile);
+            if ($logFile === null) {
+                Logger::RecordLog(message: $entry);
+            } else {
+                Logger::RecordLog(message: $entry, logFile: $logFile);
+            }
         } catch (Throwable) {
             // Intentionally ignored.
         }

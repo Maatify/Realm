@@ -57,7 +57,11 @@ final class LoggingFailureTest extends TestCase
             $direct += substr_count($source, 'Logger::RecordLog(');
         }
         $this->assertSame(2, $guarded, 'Both exception catch blocks must use self::reportFailure().');
-        $this->assertSame(2, $direct, 'Only the helper and the FCM transport error may call the logger.');
+        $this->assertSame(3, $direct, 'Only the helper (with and without a log file) and the FCM transport error may call the logger.');
+        $database = (string)file_get_contents(__DIR__ . '/../realm/RealmDB.php');
+        $this->assertStringContainsString("self::reportFailure(\$e, 'exception_realm');", $database, 'RealmDB keeps its explicit exception_realm log file.');
+        $sms = (string)file_get_contents(__DIR__ . '/../realm/RealmSms.php');
+        $this->assertStringContainsString('self::reportFailure($exception);', $sms, 'RealmSms leaves the log file to the logger default.');
     }
 
     /** @return array<string, mixed> */

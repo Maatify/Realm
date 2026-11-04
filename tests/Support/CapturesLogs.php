@@ -40,6 +40,25 @@ trait CapturesLogs
         return $sizes;
     }
 
+    /**
+     * The log files written to since startLogCapture() (new files, or files that grew).
+     *
+     * @return list<string>
+     */
+    private function changedLogFiles(): array
+    {
+        clearstatcache();
+        $changed = [];
+        foreach ($this->logSizes() as $path => $size) {
+            if ($size > ($this->sizesBefore[$path] ?? 0)) {
+                $changed[] = $path;
+            }
+        }
+        sort($changed);
+
+        return $changed;
+    }
+
     /** Log text appended by this test only (new files in full, grown files from the old size). */
     private function loggedText(): string
     {

@@ -97,7 +97,7 @@ class RealmSms extends RealmDB
             ]);
             return true;
         }catch (DatabaseException $exception){
-            self::reportFailure($exception, 'app');
+            self::reportFailure($exception);
             return false;
         }
 
