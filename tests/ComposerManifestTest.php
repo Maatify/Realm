@@ -5,9 +5,10 @@ namespace Maatify\Realm\Tests;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The manifest keeps the logger releases the call sites were fixed for, the Json release that allows
- * them, and Composer's fail-closed policy, so the lowest and the latest dependency sets are resolved
- * and audited under that policy in CI.
+ * The manifest keeps the Json release that allows maatify/logger 7 and Composer's fail-closed policy,
+ * so the lowest and the latest dependency sets are resolved and audited under that policy in CI.
+ * The logger constraint itself is not asserted here: scripts/verify-logger-matrix.sh pins it to each
+ * tested release in its throwaway copy.
  */
 final class ComposerManifestTest extends TestCase
 {
@@ -21,11 +22,10 @@ final class ComposerManifestTest extends TestCase
         return $manifest;
     }
 
-    public function testTheLoggerAndJsonConstraintsAllowTheFixedLoggerReleases(): void
+    public function testTheJsonFloorIsTheReleaseThatAllowsLogger7(): void
     {
         $require = $this->manifest()['require'] ?? null;
         $this->assertIsArray($require);
-        $this->assertSame('^5.0 || ^7.0', $require['maatify/logger'] ?? null);
         $json = $require['maatify/json'] ?? null;
         $this->assertIsString($json);
         $this->assertSame(1, preg_match('/^\^(5\.\d+\.\d+)$/', $json, $match), 'Unexpected constraint: ' . $json);
