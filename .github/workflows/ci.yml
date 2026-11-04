@@ -56,7 +56,7 @@ jobs:
         run: scripts/verify-logger-matrix.sh "${LOGGER_VERSION}"
 
   dependencies:
-    name: Dependencies (${{ matrix.dependencies }})
+    name: Dependencies (PHP ${{ matrix.php }}, ${{ matrix.dependencies }})
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -64,6 +64,7 @@ jobs:
       matrix:
         include:
           - { php: '8.2', dependencies: lowest }
+          - { php: '8.5', dependencies: lowest }
           - { php: '8.5', dependencies: latest }
     steps:
       - name: Checkout
