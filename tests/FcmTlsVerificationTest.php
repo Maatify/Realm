@@ -21,6 +21,9 @@ final class FcmTlsVerificationTest extends TestCase
     private string $events = '';
     private int $port = 0;
     private int $pid = 0;
+    private int $plainPort = 0;
+    private int $plainPid = 0;
+    private string $plainEvents = '';
 
     protected function setUp(): void
     {
@@ -53,8 +56,10 @@ final class FcmTlsVerificationTest extends TestCase
 
     protected function tearDown(): void
     {
-        if ($this->pid > 0) {
-            shell_exec('kill ' . $this->pid . ' 2>/dev/null');
+        foreach ([$this->pid, $this->plainPid] as $pid) {
+            if ($pid > 0) {
+                shell_exec('kill ' . $pid . ' 2>/dev/null');
+            }
         }
         array_map('unlink', glob($this->dir . '/*') ?: []);
         @rmdir($this->dir);
@@ -62,12 +67,23 @@ final class FcmTlsVerificationTest extends TestCase
 
     public function testAnUntrustedCertificateIsRejectedAndTheKeyIsNeverSent(): void
     {
-        $result = $this->send();
+        $result = $this->send('https', $this->port);
 
         $this->assertIsString($result, 'The call must fail when the certificate is not trusted.');
         $this->assertStringStartsWith('Curl failed:', $result);
         $this->assertStringContainsString('SSL', $result);
         $this->assertSame([], $this->requests(), 'No request, and so no key, may reach a server whose certificate was not verified.');
+    }
+
+    public function testAnEndpointThatIsNotHttpsReceivesNothing(): void
+    {
+        $this->startPlainServer();
+
+        $result = $this->send('http', $this->plainPort);
+
+        $this->assertIsString($result, 'The call must be refused before any request is made.');
+        $this->assertStringStartsWith('Refused:', $result);
+        $this->assertSame([], $this->requests($this->plainEvents), 'The FCM key must never be sent to an endpoint that is not https.');
     }
 
     public function testTheSourceNoLongerDisablesVerification(): void
@@ -80,23 +96,48 @@ final class FcmTlsVerificationTest extends TestCase
     }
 
     /** @return mixed */
-    private function send(): mixed
+    private function send(string $scheme, int $port): mixed
     {
         $output = (string)shell_exec(sprintf(
-            '%s -d display_errors=0 %s %d 2>/dev/null',
+            '%s -d display_errors=0 %s %d %s 2>/dev/null',
             escapeshellarg(PHP_BINARY),
             escapeshellarg(__DIR__ . '/Support/fcm_runner.php'),
-            $this->port
+            $port,
+            $scheme
         ));
 
         return json_decode($output, true);
     }
 
+    private function startPlainServer(): void
+    {
+        $this->plainEvents = $this->dir . '/plain-events.log';
+        touch($this->plainEvents);
+        $this->plainPort = $this->freePort();
+        $this->plainPid = (int)trim((string)shell_exec(sprintf(
+            '%s %s %d %s %s plain >/dev/null 2>&1 & echo $!',
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg(__DIR__ . '/Support/https_server.php'),
+            $this->plainPort,
+            escapeshellarg($this->pem),
+            escapeshellarg($this->plainEvents)
+        )));
+        for ($i = 0; $i < 50; $i++) {
+            $probe = @fsockopen('127.0.0.1', $this->plainPort, $errno, $errstr, 0.1);
+            if ($probe) {
+                fclose($probe);
+                return;
+            }
+            usleep(100000);
+        }
+        $this->fail('The local plain HTTP stand-in did not start.');
+    }
+
     /** @return list<array<string, mixed>> */
-    private function requests(): array
+    private function requests(?string $file = null): array
     {
         $requests = [];
-        foreach (explode("\n", (string)file_get_contents($this->events)) as $line) {
+        foreach (explode("\n", (string)file_get_contents($file ?? $this->events)) as $line) {
             $decoded = $line === '' ? null : json_decode($line, true);
             if (is_array($decoded)) {
                 $requests[] = $decoded;

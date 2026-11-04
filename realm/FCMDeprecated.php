@@ -63,7 +63,10 @@ abstract class FCMDeprecated
         return $this->Send();
     }
 
-    /** The legacy FCM HTTP API URL. A subclass may override it, for example to target a local test double. */
+    /**
+     * The legacy FCM HTTP API URL. A subclass may override it, for example to target a local test
+     * double; anything that is not an https URL is refused before a request is made.
+     */
     protected function endpoint(): string
     {
         return 'https://fcm.googleapis.com/fcm/send';
@@ -71,6 +74,14 @@ abstract class FCMDeprecated
 
     private function Send(){
         $url = $this->endpoint();
+        // Fail closed before any request: the server key must never leave over a connection that is
+        // not https (the URL is not echoed: it may carry credentials).
+        if (strtolower((string)parse_url($url, PHP_URL_SCHEME)) !== 'https' || (string)parse_url($url, PHP_URL_HOST) === '') {
+            $err = 'Refused: the FCM endpoint must be an https URL';
+            Logger::RecordLog(message: $err, logFile: __CLASS__ . '_err');
+
+            return $err;
+        }
 
         $headers = array(
             'Authorization: key=' . $this->api_key,

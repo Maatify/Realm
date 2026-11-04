@@ -2,17 +2,18 @@
 
 // Minimal HTTPS stand-in (a self-signed certificate valid for 127.0.0.1) that answers every request
 // with 200 and a small JSON body, and appends each request it receives to an event log as one JSON line.
-// Usage: php https_server.php <port> <pem-file> <event-log-file>
+// With a fifth argument `plain` it listens without TLS (to show what an http:// endpoint would receive).
+// Usage: php https_server.php <port> <pem-file> <event-log-file> [plain]
 
 $arguments = $_SERVER['argv'] ?? [];
-if (!is_array($arguments) || count($arguments) !== 4) {
-    fwrite(STDERR, "Usage: php https_server.php <port> <pem-file> <event-log-file>\n");
+if (!is_array($arguments) || count($arguments) < 4 || count($arguments) > 5) {
+    fwrite(STDERR, "Usage: php https_server.php <port> <pem-file> <event-log-file> [plain]\n");
     exit(2);
 }
-[$script, $port, $pem, $eventLog] = array_map(static fn (mixed $value): string => is_scalar($value) ? (string)$value : '', $arguments);
+[$script, $port, $pem, $eventLog, $mode] = array_map(static fn (mixed $value): string => is_scalar($value) ? (string)$value : '', $arguments + [4 => '']);
 
 $context = stream_context_create(['ssl' => ['local_cert' => $pem, 'verify_peer' => false, 'allow_self_signed' => true]]);
-$server = stream_socket_server("tls://127.0.0.1:$port", $errno, $errstr, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $context);
+$server = stream_socket_server(($mode === 'plain' ? 'tcp' : 'tls') . "://127.0.0.1:$port", $errno, $errstr, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $context);
 if ($server === false) {
     fwrite(STDERR, 'cannot listen: ' . (is_string($errstr) ? $errstr : 'unknown error') . "\n");
     exit(1);
