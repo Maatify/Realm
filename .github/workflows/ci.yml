@@ -55,6 +55,54 @@ jobs:
           LOGGER_VERSION: ${{ matrix.logger }}
         run: scripts/verify-logger-matrix.sh "${LOGGER_VERSION}"
 
+  dependencies:
+    name: Dependencies (${{ matrix.dependencies }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: '8.2', dependencies: lowest }
+          - { php: '8.5', dependencies: latest }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Resolve the dependencies under the fail-closed policy
+        env:
+          DEPENDENCIES: ${{ matrix.dependencies }}
+        run: |
+          set -euo pipefail
+          composer validate --strict
+          if [ "${DEPENDENCIES}" = "lowest" ]; then
+              composer update --prefer-lowest --prefer-stable --no-interaction --no-progress
+          else
+              composer update --no-interaction --no-progress
+          fi
+          composer check-platform-reqs
+          composer show --direct --no-interaction
+          # The abandoned google/crc32 appears only in the lowest set (a transitive package of
+          # kreait/firebase-php 6.x through google/cloud-storage 1.x), so there it is reported
+          # without failing; the latest set must have no abandoned package.
+          if [ "${DEPENDENCIES}" = "lowest" ]; then
+              composer audit --abandoned=report --no-interaction
+          else
+              composer audit --abandoned=fail --no-interaction
+          fi
+
+      - name: Test suite on the resolved set
+        run: vendor/bin/phpunit
+
   workflow-lint:
     name: Workflow lint
     runs-on: ubuntu-24.04
@@ -82,7 +130,7 @@ jobs:
   gate:
     name: CI gate
     if: always()
-    needs: [verify, workflow-lint]
+    needs: [verify, dependencies, workflow-lint]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
