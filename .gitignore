@@ -1,0 +1,9 @@
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.phpunit.result.cache
+/logs/
+/.idea/
+.DS_Store
+# Host-application code and credentials that live next to a local checkout, never part of the package
+/app/
