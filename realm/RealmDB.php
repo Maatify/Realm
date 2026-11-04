@@ -28,7 +28,7 @@ abstract class RealmDB
                     ->withServiceAccount($this->json_file_credentials)
                     ->createDatabase();
             } catch (\Exception $e) {
-                Logger::RecordLog($e, 'exception_realm');
+                Logger::RecordLog(message: $e, logFile: 'exception_realm');
                 Json::DbError();
             }
         }

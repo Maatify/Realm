@@ -83,7 +83,7 @@ abstract class FCMDeprecated
         if($res){
             return json_decode($result, true);
         }else{
-            Logger::RecordLog($err, __CLASS__ . '_err');
+            Logger::RecordLog(message: $err, logFile: __CLASS__ . '_err');
             return $err;
         }
     }
